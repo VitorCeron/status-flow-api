@@ -8,6 +8,7 @@ This document define informations and structures that we use to build database. 
 - Should be create `down` method with revert updates from `up` method.
 - Should be create index for columns when necessary.
 - Should be create foreign keys to keep relationships consistent.
+- Use `uuid` for identifier columns
 - All date columns should be receive UTC date.
 
 ## 2. Models

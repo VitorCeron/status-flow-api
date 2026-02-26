@@ -112,4 +112,6 @@ Criar todos os tipos de erro customizados da aplicação, preferir sempre criar 
     - Use `use Exception;` to extend default Exception
     - Group many exceptions for specific context on one folder like `Exceptions/Auth/...`
 
+## General code rules and best practices
 
+- Create docblock comments on methods or variables to keep better organized the code, it's easier to read.
