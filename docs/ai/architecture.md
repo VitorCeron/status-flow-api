@@ -112,6 +112,47 @@ Criar todos os tipos de erro customizados da aplicação, preferir sempre criar 
     - Use `use Exception;` to extend default Exception
     - Group many exceptions for specific context on one folder like `Exceptions/Auth/...`
 
+## Pagination (standard pattern for list endpoints)
+
+All list endpoints (index actions) must return paginated data using `LengthAwarePaginator`. This is the standard for all CRUD modules in the application.
+
+### Layer responsibilities
+
+- **Repository:** Add a `paginateBy{Field}` method (e.g. `paginateByUserId`) returning `LengthAwarePaginator`:
+  ```php
+  public function paginateByUserId(string $userId, int $perPage): LengthAwarePaginator
+  {
+      return $this->model->where('user_id', $userId)->paginate($perPage);
+  }
+  ```
+
+- **Service:** Accept `int $perPage` and delegate to the repository:
+  ```php
+  public function index(User $user, int $perPage): LengthAwarePaginator
+  {
+      return $this->repository->paginateByUserId($user->id, $perPage);
+  }
+  ```
+
+- **Controller:** Extract `per_page` from the query string with a default of 15 and a max cap of 100:
+  ```php
+  $perPage = min((int) $request->query('per_page', 15), 100);
+  $items   = $this->service->index($request->user(), $perPage);
+  return ItemResource::collection($items);
+  ```
+  No custom ResourceCollection is needed — Laravel's `ResourceCollection` automatically detects a paginator and wraps the response with `data`, `links`, and `meta`.
+
+### Response format
+
+```json
+GET /api/monitors?per_page=15&page=2
+{
+  "data": [ { ... } ],
+  "links": { "first": "...", "last": "...", "prev": "...", "next": "..." },
+  "meta":  { "current_page": 2, "last_page": 4, "per_page": 15, "total": 55 }
+}
+```
+
 ## General code rules and best practices
 
 - Create docblock comments on methods or variables to keep better organized the code, it's easier to read.
