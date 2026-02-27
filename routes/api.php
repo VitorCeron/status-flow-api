@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Monitor\MonitorController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -27,5 +29,19 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
  * Normal users
  */
 Route::middleware(['auth:sanctum', 'role:user'])->group(function () {
-    // User routes go here
+    /**
+     * Dashboard Routes
+     */
+    Route::get('dashboard', [DashboardController::class, 'summary']);
+
+    /**
+     * Monitor Routes
+     */
+    Route::prefix('monitors')->group(function () {
+        Route::get('/', [MonitorController::class, 'index']);
+        Route::post('/', [MonitorController::class, 'store']);
+        Route::get('/{id}', [MonitorController::class, 'show']);
+        Route::put('/{id}', [MonitorController::class, 'update']);
+        Route::delete('/{id}', [MonitorController::class, 'destroy']);
+    });
 });
