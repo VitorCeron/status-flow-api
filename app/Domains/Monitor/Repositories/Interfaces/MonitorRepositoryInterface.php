@@ -4,6 +4,7 @@ namespace App\Domains\Monitor\Repositories\Interfaces;
 
 use App\Models\Monitor;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 interface MonitorRepositoryInterface
 {
@@ -14,6 +15,13 @@ interface MonitorRepositoryInterface
      * @return LengthAwarePaginator
      */
     public function paginateByUserId(string $userId, int $perPage, array $filters = []): LengthAwarePaginator;
+
+    /**
+     * Return all active monitors whose check interval has elapsed.
+     *
+     * @return Collection<int, Monitor>
+     */
+    public function findDueToRun(): Collection;
 
     /**
      * @param string $id

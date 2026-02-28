@@ -6,6 +6,7 @@ use App\Domains\Monitor\Repositories\Interfaces\MonitorRepositoryInterface;
 use App\Models\Monitor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class MonitorRepository implements MonitorRepositoryInterface
 {
@@ -67,5 +68,19 @@ class MonitorRepository implements MonitorRepositoryInterface
     public function delete(Monitor $monitor): void
     {
         $monitor->delete();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function findDueToRun(): Collection
+    {
+        return $this->model
+            ->where('is_active', true)
+            ->where(function (Builder $query) {
+                $query->whereNull('last_checked_at')
+                    ->orWhereRaw('DATE_ADD(last_checked_at, INTERVAL `interval` SECOND) <= NOW()');
+            })
+            ->get();
     }
 }

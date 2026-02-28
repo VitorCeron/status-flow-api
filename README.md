@@ -1,66 +1,203 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# StatusFlow — API Health Monitoring
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+StatusFlow is a backend API built to monitor external endpoints and alert users when services go down. Think of it as a lightweight alternative to UptimeRobot, but built from scratch to demonstrate real-world backend engineering decisions.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## What it does
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Monitors API endpoints at configurable intervals (1, 5, or 10 minutes)
+- Tracks response time and HTTP status codes on every check
+- Detects failures and sends email alerts when a monitor crosses the failure threshold
+- Stores check history with pagination for analytics
+- Provides a dashboard with uptime stats, incident counts, and recent activity
+- Prunes old logs automatically on a daily schedule
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## The Challenges
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1. Scheduling checks without overlap
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+The core challenge of a monitoring system is running checks reliably and at scale. A naive approach (a single loop checking every monitor in sequence) doesn't work when you have hundreds of monitors with different intervals.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Solution:** A scheduled command (`monitors:run`) runs every minute and queries for monitors that are *due to run* — meaning their last check time plus interval is in the past. Each eligible monitor dispatches an independent `ExecuteMonitorCheckJob` to the queue, which means checks run concurrently and a slow or failing endpoint doesn't block others.
 
-## Laravel Sponsors
+### 2. Avoiding false positives
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+A single failed HTTP request can be a network blip, not a real outage. Sending an alert for every failure would create noise and erode trust.
 
-### Premium Partners
+**Solution:** Each monitor has a configurable `fail_threshold`. The system counts consecutive failures using `countConsecutiveFailures()` in `MonitorLogService` before changing the monitor status to `DOWN` and sending an email. This means alerts only fire when the failure is sustained.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+### 3. Keeping the architecture testable and clean
 
-## Contributing
+A service that directly instantiates its dependencies is hard to test and hard to change. Mixing HTTP calls, database writes, and email dispatch in a single class creates a maintenance burden.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**Solution:** The project uses Domain-Driven Design with a strict layered architecture: Controllers only validate and delegate, Services own business logic, Repositories handle persistence, and all dependencies are injected via interfaces. The IoC container binds everything in `AppServiceProvider`. Tests mock the infrastructure, not the logic.
 
-## Code of Conduct
+### 4. Separating concerns across monitoring stages
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The execution of a check (making the HTTP request) and the processing of its result (saving the log, updating status, sending mail) are different responsibilities that should be independently testable.
 
-## Security Vulnerabilities
+**Solution:** `MonitorExecutionService` handles the HTTP call with Guzzle and returns a result object. `MonitorLogService` saves the log. The job that glues them together (`ExecuteMonitorCheckJob`) is thin and orchestrates without owning logic.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
+
+## Architecture
+
+The project follows a domain-driven structure with one domain per bounded context:
+
+```
+app/
+├── Console/
+│   └── Commands/
+│       ├── RunMonitorChecksCommand.php    # Dispatches jobs every minute
+│       └── PruneMonitorLogsCommand.php   # Daily log cleanup
+├── Domains/
+│   ├── Auth/                             # Register, login, logout, me
+│   ├── Dashboard/                        # Stats aggregation
+│   ├── Monitor/                          # CRUD for monitors
+│   ├── MonitorExecution/                 # HTTP check execution
+│   └── MonitorLog/                       # Log persistence and queries
+├── Http/
+│   ├── Controllers/                      # Thin controllers, no business logic
+│   ├── Requests/                         # Form validation
+│   └── Resources/                        # Response transformation
+├── Jobs/
+│   └── ExecuteMonitorCheckJob.php        # Queued check execution
+└── Mail/
+    └── MonitorDownMail.php               # Failure alert email
+```
+
+Each domain has its own `Services/`, `Repositories/`, and `Exceptions/` directories. Interfaces are bound in `AppServiceProvider`, keeping implementation details hidden from consumers.
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | — | Register a new user |
+| POST | `/api/auth/login` | — | Login and receive token |
+| POST | `/api/auth/logout` | ✓ | Invalidate token |
+| GET | `/api/auth/me` | ✓ | Authenticated user profile |
+| GET | `/api/dashboard` | ✓ | Summary stats |
+| GET | `/api/monitors` | ✓ | Paginated list of monitors |
+| POST | `/api/monitors` | ✓ | Create a monitor |
+| GET | `/api/monitors/{id}` | ✓ | Show monitor details |
+| PUT | `/api/monitors/{id}` | ✓ | Update a monitor |
+| DELETE | `/api/monitors/{id}` | ✓ | Delete a monitor |
+| GET | `/api/monitors/{id}/stats` | ✓ | Response time history and uptime % |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Language | PHP 8.5.3 |
+| Framework | Laravel 10 |
+| Database | MySQL 8.4 |
+| Authentication | Laravel Sanctum (API tokens) |
+| HTTP Client | Guzzle 7 |
+| Queue | Laravel Queue (database driver) |
+| Cache | Redis |
+| Email (local) | Mailpit |
+| Testing | PHPUnit 10 |
+| Containerization | Docker (Laravel Sail) |
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Docker and Docker Compose
+- PHP 8.5+ with Composer (only needed to install Sail initially)
+
+### Steps
+
+**1. Clone the repository**
+
+```bash
+git clone https://github.com/your-username/status-flow.git
+cd status-flow
+```
+
+**2. Install PHP dependencies**
+
+```bash
+composer install
+```
+
+**3. Copy and configure the environment file**
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set your desired `APP_KEY`, database credentials, and mail settings. For local development the defaults work with Sail.
+
+**4. Generate the application key**
+
+```bash
+php artisan key:generate
+```
+
+**5. Start the Docker containers**
+
+```bash
+./vendor/bin/sail up -d
+```
+
+This starts:
+- The Laravel application on port `80`
+- MySQL on port `3306`
+- Redis on port `6379`
+- Mailpit (email dashboard) on port `8025`
+
+**6. Run migrations**
+
+```bash
+./vendor/bin/sail artisan migrate
+```
+
+**7. Start the queue worker**
+
+```bash
+./vendor/bin/sail artisan queue:work --queue=local-default
+```
+
+**8. Start the scheduler (for automatic monitor checks)**
+
+```bash
+./vendor/bin/sail artisan schedule:work
+```
+
+The scheduler dispatches `monitors:run` every minute and `monitors:prune-logs` daily.
+
+---
+
+## Running Tests
+
+```bash
+# Run all tests
+./vendor/bin/sail composer test
+
+# Run a specific test file with readable output
+./vendor/bin/sail artisan test --filter MonitorControllerTest --testdox
+```
+
+Tests use `RefreshDatabase` and factory-generated data. External HTTP calls in `MonitorExecutionService` are mocked, so no real network requests are made during testing.
+
+---
+
+## Local Email
+
+Mailpit captures all outbound emails locally. Access the inbox at [http://localhost:8025](http://localhost:8025) after starting Sail.
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT

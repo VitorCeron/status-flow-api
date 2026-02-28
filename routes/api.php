@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Monitor\MonitorController;
+use App\Http\Controllers\Monitor\MonitorStatsController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -43,5 +44,6 @@ Route::middleware(['auth:sanctum', 'role:user'])->group(function () {
         Route::get('/{id}', [MonitorController::class, 'show']);
         Route::put('/{id}', [MonitorController::class, 'update']);
         Route::delete('/{id}', [MonitorController::class, 'destroy']);
+        Route::get('/{id}/stats', MonitorStatsController::class);
     });
 });
