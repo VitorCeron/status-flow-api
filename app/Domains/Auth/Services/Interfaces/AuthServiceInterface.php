@@ -33,4 +33,12 @@ interface AuthServiceInterface
      * @return User
      */
     public function me(User $user): User;
+
+    /**
+     *
+     * @param User $user
+     * @param array $data
+     * @return void
+     */
+    public function changePassword(User $user, array $data): void;
 }

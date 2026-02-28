@@ -39,4 +39,13 @@ class AuthRepository implements AuthRepositoryInterface
     {
         return $this->model->create($data);
     }
+
+    /**
+     *
+     * @inheritdoc
+     */
+    public function updatePassword(User $user, string $password): void
+    {
+        $user->update(['password' => $password]);
+    }
 }

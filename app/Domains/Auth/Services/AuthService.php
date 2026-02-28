@@ -75,4 +75,17 @@ class AuthService implements AuthServiceInterface
     {
         return $user;
     }
+
+    /**
+     *
+     * @inheritDoc
+     */
+    public function changePassword(User $user, array $data): void
+    {
+        if (! Hash::check($data['old_password'], $user->password)) {
+            throw new InvalidCredentialsException();
+        }
+
+        $this->authRepository->updatePassword($user, $data['password']);
+    }
 }

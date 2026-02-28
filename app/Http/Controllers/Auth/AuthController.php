@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Domains\Auth\Services\Interfaces\AuthServiceInterface;
 use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\Auth\AuthTokenResource;
@@ -78,5 +79,21 @@ class AuthController extends Controller
         return (new UserResource($user))
             ->response()
             ->setStatusCode(200);
+    }
+
+    /**
+     *
+     * @param ChangePasswordRequest $request
+     * @return JsonResponse
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        try {
+            $this->authService->changePassword($request->user(), $request->validated());
+        } catch (InvalidCredentialsException $e) {
+            return response()->json(['message' => $e->getMessage()], 401);
+        }
+
+        return response()->json(null, 204);
     }
 }

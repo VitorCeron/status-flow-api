@@ -19,4 +19,12 @@ interface AuthRepositoryInterface
      * @return User
      */
     public function create(array $data): User;
+
+    /**
+     *
+     * @param User $user
+     * @param string $password
+     * @return void
+     */
+    public function updatePassword(User $user, string $password): void;
 }
