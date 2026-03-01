@@ -41,4 +41,11 @@ interface AuthServiceInterface
      * @return void
      */
     public function changePassword(User $user, array $data): void;
+
+    /**
+     *
+     * @param User $user
+     * @return void
+     */
+    public function deleteAccount(User $user): void;
 }

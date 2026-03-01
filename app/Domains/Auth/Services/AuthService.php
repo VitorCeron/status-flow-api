@@ -88,4 +88,15 @@ class AuthService implements AuthServiceInterface
 
         $this->authRepository->updatePassword($user, $data['password']);
     }
+
+    /**
+     *
+     * @inheritDoc
+     */
+    public function deleteAccount(User $user): void
+    {
+        $user->tokens()->delete();
+        $user->monitors()->delete();
+        $this->authRepository->deleteAccount($user);
+    }
 }

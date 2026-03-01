@@ -96,4 +96,16 @@ class AuthController extends Controller
 
         return response()->json(null, 204);
     }
+
+    /**
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $this->authService->deleteAccount($request->user());
+
+        return response()->json(null, 204);
+    }
 }

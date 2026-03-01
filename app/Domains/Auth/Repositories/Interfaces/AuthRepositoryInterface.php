@@ -27,4 +27,11 @@ interface AuthRepositoryInterface
      * @return void
      */
     public function updatePassword(User $user, string $password): void;
+
+    /**
+     *
+     * @param User $user
+     * @return void
+     */
+    public function deleteAccount(User $user): void;
 }

@@ -48,4 +48,13 @@ class AuthRepository implements AuthRepositoryInterface
     {
         $user->update(['password' => $password]);
     }
+
+    /**
+     *
+     * @inheritdoc
+     */
+    public function deleteAccount(User $user): void
+    {
+        $user->delete();
+    }
 }
