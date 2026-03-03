@@ -155,4 +155,4 @@ GET /api/monitors?per_page=15&page=2
 
 ## General code rules and best practices
 
-- Create docblock comments on methods or variables to keep better organized the code, it's easier to read.
+- Create docblock comments on methods or variables inside Controllers, Services, Interfaces, Repositories to keep better organized the code, it's easier to read.
