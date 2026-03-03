@@ -11,10 +11,19 @@ use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
 {
+    /**
+     *
+     * @param DashboardServiceInterface $dashboardService
+     */
     public function __construct(
         private readonly DashboardServiceInterface $dashboardService,
     ) {}
 
+    /**
+     *
+     * @param DashboardRequest $request
+     * @return JsonResponse
+     */
     public function summary(DashboardRequest $request): JsonResponse
     {
         try {

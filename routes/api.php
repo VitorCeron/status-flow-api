@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Backoffice\Dashboard\BackofficeDashboardController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Monitor\MonitorController;
 use App\Http\Controllers\Monitor\MonitorStatsController;
@@ -25,7 +26,10 @@ Route::prefix('auth')->group(function () {
  * Admin backoffice
  */
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-    // Admin routes go here
+    /**
+     * Backoffice Dashboard Routes
+     */
+    Route::get('backoffice/dashboard', [BackofficeDashboardController::class, 'summary']);
 });
 
 /**

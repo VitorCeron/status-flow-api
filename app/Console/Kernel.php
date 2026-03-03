@@ -12,7 +12,14 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        /**
+         *
+         */
         $schedule->command('monitors:run')->everyMinute();
+
+        /**
+         *
+         */
         $schedule->command('monitors:prune-logs')->daily();
     }
 
