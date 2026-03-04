@@ -8,13 +8,25 @@ use Illuminate\Database\Eloquent\Collection;
 
 class DashboardRepository implements DashboardRepositoryInterface
 {
+    /**
+     *
+     * @param Monitor $model
+     */
     public function __construct(private readonly Monitor $model) {}
 
+    /**
+     *
+     * @inheritdoc
+     */
     public function countByUserId(string $userId): int
     {
         return $this->model->where('user_id', $userId)->count();
     }
 
+    /**
+     *
+     * @inheritdoc
+     */
     public function countByUserIdAndStatus(string $userId, string $status): int
     {
         return $this->model
@@ -23,6 +35,22 @@ class DashboardRepository implements DashboardRepositoryInterface
             ->count();
     }
 
+    /**
+     *
+     * @inheritdoc
+     */
+    public function countPausedByUserId(string $userId): int
+    {
+        return $this->model
+            ->where('user_id', $userId)
+            ->where('is_active', false)
+            ->count();
+    }
+
+    /**
+     *
+     * @inheritdoc
+     */
     public function latestByUserId(string $userId, int $limit): Collection
     {
         return $this->model

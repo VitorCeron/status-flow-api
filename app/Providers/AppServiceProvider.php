@@ -19,6 +19,10 @@ use App\Domains\Monitor\Repositories\Interfaces\MonitorRepositoryInterface;
 use App\Domains\Monitor\Services\MonitorService;
 use App\Domains\Monitor\Services\Interfaces\MonitorServiceInterface;
 use App\Domains\MonitorExecution\Services\Interfaces\MonitorExecutionServiceInterface;
+use App\Domains\Profile\Repositories\Interfaces\ProfileRepositoryInterface;
+use App\Domains\Profile\Repositories\ProfileRepository;
+use App\Domains\Profile\Services\Interfaces\ProfileServiceInterface;
+use App\Domains\Profile\Services\ProfileService;
 use App\Domains\MonitorExecution\Services\MonitorExecutionService;
 use App\Domains\MonitorLog\Repositories\Interfaces\MonitorLogRepositoryInterface;
 use App\Domains\MonitorLog\Repositories\MonitorLogRepository;
@@ -42,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MonitorLogRepositoryInterface::class, MonitorLogRepository::class);
         $this->app->bind(MonitorLogServiceInterface::class, MonitorLogService::class);
         $this->app->bind(MonitorExecutionServiceInterface::class, MonitorExecutionService::class);
+        $this->app->bind(ProfileRepositoryInterface::class, ProfileRepository::class);
+        $this->app->bind(ProfileServiceInterface::class, ProfileService::class);
         $this->app->singleton(Client::class, fn () => new Client());
     }
 

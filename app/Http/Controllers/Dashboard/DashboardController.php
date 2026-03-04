@@ -21,8 +21,7 @@ class DashboardController extends Controller
 
     /**
      *
-     * @param DashboardRequest $request
-     * @return JsonResponse
+     * @inheritdoc
      */
     public function summary(DashboardRequest $request): JsonResponse
     {

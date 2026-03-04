@@ -5,6 +5,7 @@ use App\Http\Controllers\Backoffice\Dashboard\BackofficeDashboardController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Monitor\MonitorController;
 use App\Http\Controllers\Monitor\MonitorStatsController;
+use App\Http\Controllers\Profile\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -20,6 +21,14 @@ Route::prefix('auth')->group(function () {
         Route::post('change-password', [AuthController::class, 'changePassword']);
         Route::delete('account', [AuthController::class, 'deleteAccount']);
     });
+});
+
+/**
+ * Profile Routes
+ */
+Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
+    Route::get('timezones', [ProfileController::class, 'timezones']);
+    Route::patch('settings', [ProfileController::class, 'updateSettings']);
 });
 
 /**

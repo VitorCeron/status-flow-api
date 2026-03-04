@@ -13,20 +13,20 @@ class DashboardService implements DashboardServiceInterface
         private readonly DashboardRepositoryInterface $dashboardRepository,
     ) {}
 
+    /**
+     *
+     * @param User $user
+     * @return array
+     */
     public function summary(User $user): array
     {
         $lastMonitors = $this->dashboardRepository->latestByUserId($user->id, 5);
-
-        // TODO: Replace with real DB field when monitor check results are implemented
-        $lastMonitors->transform(function ($monitor) {
-            $monitor->is_up = (bool) random_int(0, 1);
-            return $monitor;
-        });
 
         return [
             'total_monitors' => $this->dashboardRepository->countByUserId($user->id),
             'total_up'       => $this->dashboardRepository->countByUserIdAndStatus($user->id, MonitorStatusEnum::UP->value),
             'total_down'     => $this->dashboardRepository->countByUserIdAndStatus($user->id, MonitorStatusEnum::DOWN->value),
+            'total_paused'   => $this->dashboardRepository->countPausedByUserId($user->id),
             'last_monitors'  => $lastMonitors,
         ];
     }
