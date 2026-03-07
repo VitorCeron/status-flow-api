@@ -139,7 +139,7 @@ class MonitorLogRepository implements MonitorLogRepositoryInterface
             ->where('status', MonitorStatusEnum::UP->value)
             ->count();
 
-        return round(($upCount / $total) * 100, 2);
+        return (float) round(($upCount / $total) * 100, 2);
     }
 
     /**
